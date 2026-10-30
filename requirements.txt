@@ -1,3 +1,4 @@
 llama-index>=0.10.0
 httpx>=0.20.0
-duckduckgo-search>=4.0.0
+sentence-transformers
+huggingface-hub
