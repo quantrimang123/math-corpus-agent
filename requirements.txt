@@ -1,4 +1,5 @@
 llama-index>=0.10.0
+llama-index-core>=0.10.0
+sentence-transformers>=2.2.0
+huggingface-hub>=0.17.0
 httpx>=0.20.0
-sentence-transformers
-huggingface-hub
