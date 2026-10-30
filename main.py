@@ -1,6 +1,6 @@
 import os
 from llama_index.core import VectorStoreIndex
-from llama_index.readers.arxiv import ArxivReader
+from llama_index_readers.arxiv import ArxivReader
 from llama_index.core.query_engine import SubQuestionQueryEngine
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from config import TOPIC_LIST, MAX_RESULTS_PER_TOPIC, OUTPUT_FILENAME
@@ -52,7 +52,6 @@ def run_pipeline():
     print("=" * 50)
     print(response)
 
-    # Lưu kết quả
     with open(OUTPUT_FILENAME, "w", encoding="utf-8") as f:
         f.write(str(response))
     print(f"\n💾 [Kết quả] Đã lưu báo cáo thành công vào '{OUTPUT_FILENAME}'!")
