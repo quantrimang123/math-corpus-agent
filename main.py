@@ -1,15 +1,18 @@
 import os
 import urllib.request
 import xml.etree.ElementTree as ET
-from llama_index.core import Document, VectorStoreIndex
+from llama_index.core import Document, VectorStoreIndex, Settings
 from llama_index.core.query_engine import SubQuestionQueryEngine
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from config import TOPIC_LIST, MAX_RESULTS_PER_TOPIC, OUTPUT_FILENAME
 
+# Cấu hình mô hình nhúng local miễn phí cho GitHub Actions
+Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+
 def fetch_arxiv_documents():
-    """Tải trực tiếp tài liệu từ arXiv API chuẩn, không phụ thuộc gói bên thứ ba"""
     documents = []
-    print("🚀 [Phân tích & Ingestion] Bắt đầu quét dữ liệu từ arXiv API trực tiếp...")
+    print("🚀 [Phân tích & Ingestion] Đang quét dữ liệu từ arXiv API trên GitHub Actions...")
     
     for topic in TOPIC_LIST:
         try:
@@ -27,7 +30,6 @@ def fetch_arxiv_documents():
                 title = entry.find('atom:title', ns).text.strip().replace('\n', ' ')
                 summary = entry.find('atom:summary', ns).text.strip().replace('\n', ' ')
                 
-                # Tạo Document chuẩn của LlamaIndex từ dữ liệu thô
                 doc_text = f"Title: {title}\nAbstract: {summary}"
                 documents.append(Document(text=doc_text))
                 
