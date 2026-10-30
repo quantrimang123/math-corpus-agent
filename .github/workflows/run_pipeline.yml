@@ -1,13 +1,12 @@
-name: Math Corpus Automated Pipeline
+name: Math Corpus CI Pipeline
 
 on:
+  workflow_dispatch: # Cho phép bấm nút chạy thủ công trên GitHub
   schedule:
-    # Chạy tự động vào 0:00 UTC mỗi Chủ Nhật hàng tuần
-    - cron: '0 0 * * 0'
-  workflow_dispatch: # Cho phép bấm nút "Run workflow" thủ công trên GitHub
+    - cron: '0 0 * * 0' # Hoặc tự động chạy hàng tuần
 
 jobs:
-  run-agent:
+  build-and-run:
     runs-on: ubuntu-latest
     
     steps:
@@ -23,13 +22,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install sentence-transformers
 
-      - name: Run Math Agent Script
+      - name: Run Math Corpus Agent
         run: python main.py
 
-      - name: Upload artifact (Kết quả thu thập)
+      - name: Upload Result Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: math-corpus-result
+          name: math-corpus-report
           path: math_corpus_summary.txt
