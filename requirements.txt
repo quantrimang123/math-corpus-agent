@@ -2,4 +2,3 @@ llama-index>=0.10.0
 httpx>=0.20.0
 sentence-transformers
 huggingface-hub
-llama-index-embeddings-huggingface
