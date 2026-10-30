@@ -4,70 +4,70 @@ import xml.etree.ElementTree as ET
 from llama_index.core import Document, VectorStoreIndex, Settings
 from llama_index.core.query_engine import SubQuestionQueryEngine
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from config import TOPIC_LIST, MAX_RESULTS_PER_TOPIC, OUTPUT_FILENAME
 
-# Cấu hình mô hình nhúng local miễn phí cho GitHub Actions
-Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+# Dùng trực tiếp HuggingFaceEmbedding thông qua sentence-transformers chuẩn thuần túy
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+Settings.embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-def fetch_arxiv_documents():
+def fetch_arxiv_source(topic, max_results):
     documents = []
-    print("🚀 [Phân tích & Ingestion] Đang quét dữ liệu từ arXiv API trên GitHub Actions...")
-    
-    for topic in TOPIC_LIST:
-        try:
-            print(f"   [-] Đang tải tài liệu cho chủ đề: {topic}")
-            encoded_topic = topic.replace(" ", "+")
-            url = f"http://export.arxiv.org/api/query?search_query=all:{encoded_topic}&max_results={MAX_RESULTS_PER_TOPIC}"
+    try:
+        encoded_topic = topic.replace(" ", "+")
+        url = f"http://export.arxiv.org/api/query?search_query=all:{encoded_topic}&max_results={max_results}"
+        
+        with urllib.request.urlopen(url) as response:
+            xml_data = response.read()
             
-            with urllib.request.urlopen(url) as response:
-                xml_data = response.read()
-                
-            root = ET.fromstring(xml_data)
-            ns = {'atom': 'http://www.w3.org/2005/Atom'}
+        root = ET.fromstring(xml_data)
+        ns = {'atom': 'http://www.w3.org/2005/Atom'}
+        
+        for entry in root.findall('atom:entry', ns):
+            title = entry.find('atom:title', ns).text.strip().replace('\n', ' ')
+            summary = entry.find('atom:summary', ns).text.strip().replace('\n', ' ')
             
-            for entry in root.findall('atom:entry', ns):
-                title = entry.find('atom:title', ns).text.strip().replace('\n', ' ')
-                summary = entry.find('atom:summary', ns).text.strip().replace('\n', ' ')
-                
-                doc_text = f"Title: {title}\nAbstract: {summary}"
-                documents.append(Document(text=doc_text))
-                
-        except Exception as e:
-            print(f"   [!] Lỗi khi tải chủ đề '{topic}': {e}")
-            
+            doc_text = f"Title: {title}\nAbstract: {summary}"
+            documents.append(Document(text=doc_text))
+    except Exception as e:
+        print(f"   [!] Lỗi nguồn arXiv cho chủ đề '{topic}': {e}")
     return documents
 
-def run_pipeline():
-    all_documents = fetch_arxiv_documents()
+def aggregate_all_sources():
+    all_documents = []
+    print("🚀 [Ingestion] Đang tổng hợp dữ liệu từ arXiv trên GitHub Actions...")
+    
+    for topic in TOPIC_LIST:
+        print(f"   [-] Đang xử lý chủ đề: {topic}")
+        arxiv_docs = fetch_arxiv_source(topic, MAX_RESULTS_PER_TOPIC)
+        all_documents.extend(arxiv_docs)
+        
+    print(f"✅ Tổng số tài liệu thu thập được: {len(all_documents)}")
+    return all_documents
 
+def run_pipeline():
+    all_documents = aggregate_all_sources()
     if not all_documents:
-        print("[!] Không thu thập được tài liệu nào. Dừng chương trình.")
+        print("[!] Không thu thập được tài liệu nào.")
         return
 
-    print("🧠 [Core] Đang xây dựng Vector Index từ dữ liệu thô...")
+    print("🧠 [Core] Đang xây dựng Vector Index...")
     index = VectorStoreIndex.from_documents(all_documents)
     base_query_engine = index.as_query_engine(similarity_top_k=2)
 
     query_engine_tools = [
         QueryEngineTool(
             query_engine=base_query_engine,
-            metadata=ToolMetadata(
-                name="math_corpus_tool",
-                description="Kho tri thức chứa các bài toán và định lý toán học đã được thu thập."
-            ),
+            metadata=ToolMetadata(name="math_corpus_tool", description="Kho tri thức toán học."),
         )
     ]
 
-    print("🤖 [APISAI] Khởi tạo Sub-Question Agent để tổng hợp...")
+    print("🤖 [APISAI] Khởi tạo Sub-Question Agent...")
     query_engine = SubQuestionQueryEngine.from_defaults(
         query_engine_tools=query_engine_tools,
         use_async=True
     )
 
     prompt = "Hãy tổng hợp các phương pháp giải quyết, định lý và công thức cốt lõi từ các tài liệu toán học vừa thu thập."
-    
-    print(f"\n💡 Đang thực hiện truy vấn tổng hợp...")
     response = query_engine.query(prompt)
 
     print("=" * 50)
@@ -77,7 +77,7 @@ def run_pipeline():
 
     with open(OUTPUT_FILENAME, "w", encoding="utf-8") as f:
         f.write(str(response))
-    print(f"\n💾 [Kết quả] Đã lưu báo cáo thành công vào '{OUTPUT_FILENAME}'!")
+    print(f"\n💾 Đã lưu file '{OUTPUT_FILENAME}' thành công!")
 
 if __name__ == "__main__":
     run_pipeline()
