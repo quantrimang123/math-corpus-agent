@@ -1,22 +1,43 @@
 import os
-from llama_index.core import VectorStoreIndex
-from llama_index_readers.arxiv import ArxivReader
+import urllib.request
+import xml.etree.ElementTree as ET
+from llama_index.core import Document, VectorStoreIndex
 from llama_index.core.query_engine import SubQuestionQueryEngine
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from config import TOPIC_LIST, MAX_RESULTS_PER_TOPIC, OUTPUT_FILENAME
 
-def run_pipeline():
-    print("🚀 [Phân tích & Ingestion] Bắt đầu quét dữ liệu từ arXiv...")
+def fetch_arxiv_documents():
+    """Tải trực tiếp tài liệu từ arXiv API chuẩn, không phụ thuộc gói bên thứ ba"""
+    documents = []
+    print("🚀 [Phân tích & Ingestion] Bắt đầu quét dữ liệu từ arXiv API trực tiếp...")
     
-    all_documents = []
     for topic in TOPIC_LIST:
         try:
             print(f"   [-] Đang tải tài liệu cho chủ đề: {topic}")
-            reader = ArxivReader(search_query=topic, max_results=MAX_RESULTS_PER_TOPIC)
-            docs = reader.load_data()
-            all_documents.extend(docs)
+            encoded_topic = topic.replace(" ", "+")
+            url = f"http://export.arxiv.org/api/query?search_query=all:{encoded_topic}&max_results={MAX_RESULTS_PER_TOPIC}"
+            
+            with urllib.request.urlopen(url) as response:
+                xml_data = response.read()
+                
+            root = ET.fromstring(xml_data)
+            ns = {'atom': 'http://www.w3.org/2005/Atom'}
+            
+            for entry in root.findall('atom:entry', ns):
+                title = entry.find('atom:title', ns).text.strip().replace('\n', ' ')
+                summary = entry.find('atom:summary', ns).text.strip().replace('\n', ' ')
+                
+                # Tạo Document chuẩn của LlamaIndex từ dữ liệu thô
+                doc_text = f"Title: {title}\nAbstract: {summary}"
+                documents.append(Document(text=doc_text))
+                
         except Exception as e:
             print(f"   [!] Lỗi khi tải chủ đề '{topic}': {e}")
+            
+    return documents
+
+def run_pipeline():
+    all_documents = fetch_arxiv_documents()
 
     if not all_documents:
         print("[!] Không thu thập được tài liệu nào. Dừng chương trình.")
