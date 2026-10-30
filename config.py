@@ -5,5 +5,5 @@ TOPIC_LIST = [
     "Modular arithmetic quadratic reciprocity"
 ]
 
-MAX_RESULTS_PER_TOPIC = 1
+MAX_RESULTS_PER_TOPIC = 2
 OUTPUT_FILENAME = "math_corpus_summary.txt"
