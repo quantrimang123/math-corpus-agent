@@ -1,4 +1,4 @@
-name: Math Corpus CI Pipeline with OpenAI
+name: Math Corpus CI Pipeline with Gemini
 
 on:
   workflow_dispatch:
@@ -31,9 +31,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Math Corpus Agent
+      - name: Run Math Corpus Agent with Gemini
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
 
       - name: Upload Result Artifact
