@@ -2,13 +2,13 @@ import os
 import urllib.request
 import xml.etree.ElementTree as ET
 from llama_index.core import Document, VectorStoreIndex, Settings
+from llama_index.llms.openai import OpenAI
 from llama_index.core.query_engine import SubQuestionQueryEngine
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from config import TOPIC_LIST, MAX_RESULTS_PER_TOPIC, OUTPUT_FILENAME
 
-# Dùng trực tiếp HuggingFaceEmbedding thông qua sentence-transformers chuẩn thuần túy
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-Settings.embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# Cấu hình tường minh mô hình OpenAI mới để tránh lỗi 404 deprecated model
+Settings.llm = OpenAI(model="gpt-4o-mini")
 
 def fetch_arxiv_source(topic, max_results):
     documents = []
@@ -57,17 +57,22 @@ def run_pipeline():
     query_engine_tools = [
         QueryEngineTool(
             query_engine=base_query_engine,
-            metadata=ToolMetadata(name="math_corpus_tool", description="Kho tri thức toán học."),
+            metadata=ToolMetadata(
+                name="math_corpus_tool",
+                description="Kho tri thức chứa các bài toán và định lý toán học."
+            ),
         )
     ]
 
-    print("🤖 [APISAI] Khởi tạo Sub-Question Agent...")
+    print("🤖 [APISAI] Khởi tạo Sub-Question Agent với gpt-4o-mini...")
     query_engine = SubQuestionQueryEngine.from_defaults(
         query_engine_tools=query_engine_tools,
         use_async=True
     )
 
     prompt = "Hãy tổng hợp các phương pháp giải quyết, định lý và công thức cốt lõi từ các tài liệu toán học vừa thu thập."
+    
+    print(f"\n💡 Đang thực hiện truy vấn tổng hợp...")
     response = query_engine.query(prompt)
 
     print("=" * 50)
