@@ -1,7 +1,4 @@
 llama-index>=0.10.0
 llama-index-core>=0.10.0
-llama-index-embeddings-huggingface>=0.1.0
-sentence-transformers>=2.2.0
-huggingface-hub>=0.17.0
-httpx>=0.20.0
 llama-index-question-gen-openai
+httpx>=0.20.0
