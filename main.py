@@ -13,8 +13,8 @@ gemini_api_key = os.environ.get("GEMINI_API_KEY")
 if gemini_api_key:
     os.environ["GOOGLE_API_KEY"] = gemini_api_key
 
-# 1. Cấu hình LLM bằng Google Gemini (Dùng định danh chuẩn gemini-1.5-flash)
-Settings.llm = Gemini(model="gemini-1.5-flash")
+# 1. Cấu hình LLM bằng Gemini 2.5 Flash mới nhất (Cực nhanh, thông minh và miễn phí)
+Settings.llm = Gemini(model="gemini-2.5-flash")
 
 # 2. Cấu hình Embedding chạy local bằng HuggingFace (Miễn phí 100%)
 Settings.embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -73,7 +73,7 @@ def run_pipeline():
         )
     ]
 
-    print("🤖 [APISAI] Khởi tạo Sub-Question Agent với Google Gemini...")
+    print("🤖 [APISAI] Khởi tạo Sub-Question Agent với Gemini 2.5 Flash...")
     query_engine = SubQuestionQueryEngine.from_defaults(
         query_engine_tools=query_engine_tools,
         use_async=True
@@ -85,7 +85,7 @@ def run_pipeline():
     response = query_engine.query(prompt)
 
     print("=" * 50)
-    print("✨ KẾT QUẢ TỪ GEMINI AGENT:")
+    print("✨ KẾT QUẢ TỪ GEMINI 2.5 AGENT:")
     print("=" * 50)
     print(response)
 
