@@ -2,15 +2,22 @@ import os
 import urllib.request
 import xml.etree.ElementTree as ET
 from llama_index.core import Document, VectorStoreIndex, Settings
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.gemini import Gemini
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.query_engine import SubQuestionQueryEngine
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from config import TOPIC_LIST, MAX_RESULTS_PER_TOPIC, OUTPUT_FILENAME
 
-# Cấu hình rõ ràng dùng OpenAI cho cả LLM và Embedding
-Settings.llm = OpenAI(model="gpt-4o-mini")
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+# Lấy Gemini API Key từ môi trường
+gemini_api_key = os.environ.get("GEMINI_API_KEY")
+if gemini_api_key:
+    os.environ["GOOGLE_API_KEY"] = gemini_api_key
+
+# 1. Cấu hình LLM bằng Google Gemini (Dùng bản gemini-1.5-flash vừa nhanh vừa miễn phí)
+Settings.llm = Gemini(model="models/gemini-1.5-flash")
+
+# 2. Cấu hình Embedding chạy local bằng HuggingFace (Không tốn phí, không giới hạn)
+Settings.embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 def fetch_arxiv_source(topic, max_results):
     documents = []
@@ -52,7 +59,7 @@ def run_pipeline():
         print("[!] Không thu thập được tài liệu nào.")
         return
 
-    print("🧠 [Core] Đang xây dựng Vector Index bằng OpenAI Embedding...")
+    print("🧠 [Core] Đang xây dựng Vector Index bằng Local Embedding...")
     index = VectorStoreIndex.from_documents(all_documents)
     base_query_engine = index.as_query_engine(similarity_top_k=2)
 
@@ -66,7 +73,7 @@ def run_pipeline():
         )
     ]
 
-    print("🤖 [APISAI] Khởi tạo Sub-Question Agent với OpenAI...")
+    print("🤖 [APISAI] Khởi tạo Sub-Question Agent với Google Gemini...")
     query_engine = SubQuestionQueryEngine.from_defaults(
         query_engine_tools=query_engine_tools,
         use_async=True
@@ -78,7 +85,7 @@ def run_pipeline():
     response = query_engine.query(prompt)
 
     print("=" * 50)
-    print("✨ KẾT QUẢ TỪ AGENT:")
+    print("✨ KẾT QUẢ TỪ GEMINI AGENT:")
     print("=" * 50)
     print(response)
 
