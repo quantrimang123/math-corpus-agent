@@ -3,12 +3,14 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from llama_index.core import Document, VectorStoreIndex, Settings
 from llama_index.llms.openai import OpenAI
+from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.core.query_engine import SubQuestionQueryEngine
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from config import TOPIC_LIST, MAX_RESULTS_PER_TOPIC, OUTPUT_FILENAME
 
-# Cấu hình tường minh mô hình OpenAI mới để tránh lỗi 404 deprecated model
+# Cấu hình rõ ràng dùng OpenAI cho cả LLM và Embedding
 Settings.llm = OpenAI(model="gpt-4o-mini")
+Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 
 def fetch_arxiv_source(topic, max_results):
     documents = []
@@ -50,7 +52,7 @@ def run_pipeline():
         print("[!] Không thu thập được tài liệu nào.")
         return
 
-    print("🧠 [Core] Đang xây dựng Vector Index...")
+    print("🧠 [Core] Đang xây dựng Vector Index bằng OpenAI Embedding...")
     index = VectorStoreIndex.from_documents(all_documents)
     base_query_engine = index.as_query_engine(similarity_top_k=2)
 
@@ -64,7 +66,7 @@ def run_pipeline():
         )
     ]
 
-    print("🤖 [APISAI] Khởi tạo Sub-Question Agent với gpt-4o-mini...")
+    print("🤖 [APISAI] Khởi tạo Sub-Question Agent với OpenAI...")
     query_engine = SubQuestionQueryEngine.from_defaults(
         query_engine_tools=query_engine_tools,
         use_async=True
